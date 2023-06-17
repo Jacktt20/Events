@@ -17,14 +17,10 @@ public enum EventPriority {
 
     @Override
     public String toString() {
-        switch(this) {
-            case HIGH:
-                return "HIGH";
-            case NORMAL:
-                return "NORMAL";
-            case LOW:
-                return "LOW";
-        }
-        return "INVALID";
+        return switch (this) {
+            case HIGH -> "HIGH";
+            case NORMAL -> "NORMAL";
+            case LOW -> "LOW";
+        };
     }
 }

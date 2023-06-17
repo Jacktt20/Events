@@ -16,7 +16,6 @@ public class Main implements Listener {
         System.out.println("event: " + event.getText());
     }
 
-
     public static void main(String[] args) {
         new Main();
     }

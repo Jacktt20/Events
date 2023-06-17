@@ -1,11 +1,13 @@
 package me.jacktt.events;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Event {
+
+    private static Map<Class<? extends Event>, PriorityList<MethodInstance>> listeners = new HashMap<>();
 
     private boolean cancelled;
 
@@ -23,19 +25,12 @@ public class Event {
 
     public static void runEvent(Event event) {
         try {
-            Field field = event.getClass().getDeclaredField("methods");
-            field.setAccessible(true);
-            List<MethodInstance> methods = (List<MethodInstance>) field.get(event);
-            for(MethodInstance methodInstance : methods) {
+            for(MethodInstance methodInstance : listeners.get(event.getClass()).getList()) {
                 Method method = methodInstance.getMethod();
                 if(event.isCancelled()) return;
                 method.invoke(methodInstance.getListener(), event);
             }
-        } catch (NoSuchFieldException e) {
-            throw new RuntimeException(e);
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
-        } catch (InvocationTargetException e) {
+        } catch (IllegalAccessException | InvocationTargetException e) {
             throw new RuntimeException(e);
         }
     }
@@ -43,20 +38,14 @@ public class Event {
     public static void addListener(Listener listener) {
         Class<?> clazz = listener.getClass();
         for(Method method : clazz.getMethods()) {
-            try {
-                if(!method.isAnnotationPresent(EventMethod.class)) continue;
-                EventPriority priority = method.getAnnotation(EventMethod.class).priority();
-                if(method.getParameterTypes().length != 1) continue;
-                if(Event.class.isAssignableFrom(method.getParameterTypes()[0])) {
-                    Field field = method.getParameterTypes()[0].getDeclaredField("methods");
-                    field.setAccessible(true);
-                    List<MethodInstance> list = (List<MethodInstance>) field.get(method.getParameterTypes()[0].getClass());
-                    list.add(new MethodInstance(listener, method));
-                }
-            } catch (NoSuchFieldException e) {
-                throw new RuntimeException(e);
-            } catch (IllegalAccessException e) {
-                throw new RuntimeException(e);
+            if(!method.isAnnotationPresent(EventMethod.class)) continue;
+            EventPriority priority = method.getAnnotation(EventMethod.class).priority();
+            if(method.getParameterTypes().length != 1) continue;
+            if(Event.class.isAssignableFrom(method.getParameterTypes()[0])) {
+                PriorityList<MethodInstance> list = listeners.get(method.getParameterTypes()[0]);
+                if(listeners.get(method.getParameterTypes()[0]) == null) list = new PriorityList<>();
+                list.add(priority.getId(), new MethodInstance(listener, method));
+                listeners.put((Class<? extends Event>) method.getParameterTypes()[0], list);
             }
         }
     }

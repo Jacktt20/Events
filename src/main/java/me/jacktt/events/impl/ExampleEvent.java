@@ -8,8 +8,6 @@ import java.util.List;
 
 public class ExampleEvent extends Event {
 
-    public static List<MethodInstance> methods = new ArrayList<>();
-
     private String text;
 
     public ExampleEvent(String text) {
